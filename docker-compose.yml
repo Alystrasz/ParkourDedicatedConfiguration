@@ -1,0 +1,74 @@
+# example docker-compose configuration for Northstar
+# - Docker Compose v1.29.0+
+# - Northstar v1.13.0+
+
+# this name is used as a prefix for containers
+name: nsdedi
+
+# common configuration
+x-ns: &ns
+
+  # if you want to use a specific version, add an image line for a specific service
+  image: ghcr.io/pg9182/northstar-dedicated:1-tf2.0.11.0
+  pull_policy: always
+
+  # always restart on crash or startup
+  restart: always
+
+  # make port auto-select work
+  network_mode: host
+
+  # log to journald (this is optional, and can be replaced with json-file or simply removed)
+  logging:
+    driver: journald
+    options:
+      env: NS_SERVER_NAME
+
+  # wait for titanfall server files to be ready
+  depends_on:
+    nsfetch:
+      condition: service_completed_successfully
+    modfetch:
+      condition: service_completed_successfully
+  volumes_from:
+    - nsfetch:ro
+    - modfetch:ro
+
+# nsfetch + modfetch + gameserver
+services:
+
+  # download base server files
+  nsfetch:
+    build:
+      context: https://gist.github.com/pg9182/9a962adbfc27e93237cd14e4523c9da8.git#HEAD
+      dockerfile: nsfetch.dockerfile
+    volumes:
+      - titanfall:/mnt/titanfall
+  
+  # download parkour mod file
+  modfetch:
+    build:
+      dockerfile: modfetch/Dockerfile
+    volumes:
+      - mods:/mnt/mods
+  
+  # game server service
+  parkour:
+    << : *ns
+    environment:
+      NS_SERVER_NAME: Parkour
+      NS_SERVER_DESC: |
+        Get to the finish line as fast as you can! (for more info, reach Alystrasz on Discord)
+      NS_EXTRA_ARGUMENTS: >
+        +setplaylist pk
+        +launchplaylist pk
+        +ns_should_return_to_lobby 0
+        +spewlog_enable 0
+        +net_compresspackets_minsize 64
+        +net_compresspackets 1
+        +parkour_api_secret ${PARKOUR_API_SECRET}
+
+# volume config for nsfetch and modfetch
+volumes:
+  titanfall:
+  mods:
