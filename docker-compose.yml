@@ -40,7 +40,7 @@ services:
   # download base server files
   nsfetch:
     build:
-      context: https://gist.github.com/pg9182/9a962adbfc27e93237cd14e4523c9da8.git#HEAD
+      context: https://gist.github.com/pg9182/9a962adbfc27e93237cd14e4523c9da8.git
       dockerfile: nsfetch.dockerfile
     volumes:
       - titanfall:/mnt/titanfall
